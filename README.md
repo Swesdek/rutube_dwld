@@ -16,6 +16,8 @@ go run ./cmd/main.go --threads 100 RUTUBE_LINK
 rutube_dwld.exe --threads 100 RUTUBE_LINK
 ````
 
+В данный момент доступен только один флаг --threads для указания количества потоков на скачивание
+
 # EN
 ## Usage
 
@@ -30,3 +32,5 @@ Or like this with compiled binary
 ````bash
 rutube_dwld.exe --threads 100 RUTUBE_LINK
 ````
+
+Currently only --threads flag is available
