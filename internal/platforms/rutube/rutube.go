@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Swesdek/rutube-dwld/internal/interactions"
 	"github.com/grafov/m3u8"
 )
 
@@ -62,12 +63,13 @@ func GetVideoInfo(url string) (string, []*m3u8.MediaSegment, uint, string) {
 		resolutions[variant.Resolution] = variant.URI
 	}
 
-	// Здесь нужно будет добавить интеракцию с пользователем, с вопросом о том,
-	// какое нужно будет разрешение видео
-	//
-	// Пока будет лучшее разрешение
+	var mediaManifestUrl string
 
-	mediaManifestUrl := resolutions[masterPlaylist.Variants[len(masterPlaylist.Variants)-1].Resolution]
+	if len(masterPlaylist.Variants) == 1 {
+		mediaManifestUrl = resolutions[masterPlaylist.Variants[0].Resolution]
+	} else {
+		mediaManifestUrl = interactions.SuggestResolution(resolutions)
+	}
 
 	res, err = http.Get(mediaManifestUrl)
 	if err != nil {

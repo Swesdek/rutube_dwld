@@ -155,7 +155,7 @@ func compileVideo(filePaths []string, videoName string) {
 		"vcodec": "copy",
 		"acodec": "copy",
 	}
-	ffmpeg_go.Input(tsFilename).Output(mp4Filename, ffmpegKwArgs).WithOutput(videoFile).OverWriteOutput().ErrorToStdOut().Run()
+	ffmpeg_go.Input(tsFilename).Output(mp4Filename, ffmpegKwArgs).WithOutput(videoFile).Silent(true).OverWriteOutput().Run()
 
 	err = os.RemoveAll(videoName)
 	if err != nil {
@@ -165,4 +165,6 @@ func compileVideo(filePaths []string, videoName string) {
 	if err != nil {
 		panic(err)
 	}
+
+	os.Exit(0)
 }
