@@ -4,6 +4,8 @@
 
 ## Использование
 
+Для использования необходим установленный ffmpeg
+
 Если у вас установлен go, то вы можете использовать утилиту так:
 
 ````bash
@@ -20,6 +22,8 @@ rutube_dwld.exe --threads 100 RUTUBE_LINK
 
 # EN
 ## Usage
+
+To use this you need to have ffmpeg installed
 
 If you have go installed you can run it like this:
 
