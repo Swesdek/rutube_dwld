@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/grafov/m3u8"
+	"github.com/schollz/progressbar/v3"
 	ffmpeg_go "github.com/u2takey/ffmpeg-go"
 )
 
@@ -41,15 +42,20 @@ func Download(
 
 	go passSegments(segments, segmentsDataChan, segmentsAmount)
 
+	if threads > int(segmentsAmount) {
+		threads = int(segmentsAmount)
+	}
 	for range threads {
 		go worker(workerContext, videoName, segmentsDataChan, fileMetadataChan, rawDownloadurl)
 	}
 
+	bar := progressbar.Default(int64(segmentsAmount), "Downloading video...")
 	var counter int
 	paths := make([]string, segmentsAmount)
 	for {
 		fileMedatada := <-fileMetadataChan
 		paths[fileMedatada.number] = fileMedatada.path
+		bar.Add(1)
 		counter++
 		if counter == int(segmentsAmount) {
 			break
