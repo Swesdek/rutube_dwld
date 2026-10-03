@@ -31,13 +31,13 @@ func Download(
 	segmentsAmount uint,
 	rawDownloadurl string,
 ) {
-	err := os.Mkdir(videoName, 0700)
+	err := os.Mkdir(videoName, 0o700)
 	if err != nil {
 		panic(err)
 	}
 
 	workerContext := context.Background()
-	segmentsDataChan := make(chan urlMetadata, threads)
+	segmentsDataChan := make(chan urlMetadata, segmentsAmount)
 	fileMetadataChan := make(chan fileMetadata, segmentsAmount)
 
 	go passSegments(segments, segmentsDataChan, segmentsAmount)
@@ -55,7 +55,10 @@ func Download(
 	for {
 		fileMedatada := <-fileMetadataChan
 		paths[fileMedatada.number] = fileMedatada.path
-		bar.Add(1)
+		err := bar.Add(1)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 		counter++
 		if counter == int(segmentsAmount) {
 			break
@@ -68,11 +71,10 @@ func Download(
 func worker(
 	ctx context.Context,
 	dirName string,
-	segmentUrlsChan <-chan urlMetadata,
+	segmentUrlsChan chan urlMetadata,
 	fileMetadataChan chan<- fileMetadata,
 	rawDownloadurl string,
 ) {
-
 	// TODO: нужно будет сделать так, чтобы те сегменты, которые не скачались возвращались в стек и скачивались повторно (макс 3 раза)
 
 	for {
@@ -84,13 +86,12 @@ func worker(
 				return
 			}
 
-			splitUrl := strings.Split(segmentData.url, "/")
-			filename := splitUrl[len(splitUrl)-1]
+			splitURL := strings.Split(segmentData.url, "/")
+			filename := splitURL[len(splitURL)-1]
 
 			filePath := path.Join(dirName, filename)
 
 			file, err := os.Create(filePath)
-
 			if err != nil {
 				fmt.Println(err.Error())
 				continue
@@ -105,16 +106,32 @@ func worker(
 			}
 
 			data, err := io.ReadAll(res.Body)
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
 
 			_, err = file.Write(data)
 			if err != nil {
 				fmt.Println(err.Error())
 				continue
 			}
+			stat, err := file.Stat()
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
+			if stat.Size() == 0 {
+				segmentUrlsChan <- segmentData
+			} else {
+				fileMetadataChan <- fileMetadata{path: filePath, number: segmentData.number}
+			}
+			err = file.Close()
+			if err != nil {
+				fmt.Println(err.Error())
+				continue
+			}
 
-			file.Close()
-
-			fileMetadataChan <- fileMetadata{path: filePath, number: segmentData.number}
 		}
 	}
 }
@@ -149,7 +166,10 @@ func compileVideo(filePaths []string, videoName string) {
 		}
 	}
 
-	completeTsFile.Close()
+	err = completeTsFile.Close()
+	if err != nil {
+		panic(err)
+	}
 
 	videoFile, err := os.Create(mp4Filename)
 	if err != nil {

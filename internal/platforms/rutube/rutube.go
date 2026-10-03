@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/Swesdek/rutube-dwld/internal/interactions"
@@ -21,13 +22,37 @@ type videoBalaner struct {
 	M3u8Url string `json:"m3u8"`
 }
 
-func GetVideoInfo(url string) (string, []*m3u8.MediaSegment, uint, string) {
+func GetVideoInfo(url string, private bool) (string, []*m3u8.MediaSegment, uint, string) {
 	urlParts := strings.Split(url, "/")
 
-	videoId := urlParts[4]
+	var privateInc int
+	if private {
+		privateInc += 1
+	}
 
-	apiUrl := fmt.Sprintf("https://rutube.ru/api/play/options/%s", videoId)
-	res, err := http.Get(apiUrl)
+	videoID := urlParts[4+privateInc]
+	var pk string
+
+	match, err := regexp.MatchString(`\?p=(.*)`, urlParts[5+privateInc])
+	if err != nil {
+		panic(err)
+	}
+
+	if match {
+		pk = fmt.Sprintf("/%s", urlParts[5+privateInc])
+	}
+
+	c := &http.Client{}
+
+	apiURL := fmt.Sprintf("https://rutube.ru/api/play/options/%s%s", videoID, pk)
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36")
+
+	res, err := c.Do(req)
 	if err != nil {
 		panic(err)
 	}
@@ -63,15 +88,15 @@ func GetVideoInfo(url string) (string, []*m3u8.MediaSegment, uint, string) {
 		resolutions[variant.Resolution] = variant.URI
 	}
 
-	var mediaManifestUrl string
+	var mediaManifestURL string
 
 	if len(masterPlaylist.Variants) == 1 {
-		mediaManifestUrl = resolutions[masterPlaylist.Variants[0].Resolution]
+		mediaManifestURL = resolutions[masterPlaylist.Variants[0].Resolution]
 	} else {
-		mediaManifestUrl = interactions.SuggestResolution(resolutions)
+		mediaManifestURL = interactions.SuggestResolution(resolutions)
 	}
 
-	res, err = http.Get(mediaManifestUrl)
+	res, err = http.Get(mediaManifestURL)
 	if err != nil {
 		panic(err)
 	}
@@ -84,12 +109,12 @@ func GetVideoInfo(url string) (string, []*m3u8.MediaSegment, uint, string) {
 	buffer = bytes.NewBuffer(mediaManifestData)
 
 	playlist, _, err = m3u8.Decode(*buffer, false)
+	if err != nil {
+		panic(err)
+	}
 
 	mediaPlaylist := playlist.(*m3u8.MediaPlaylist)
-
-	splitMediaManUrl := strings.Split(mediaManifestUrl, "/")
-
-	rawSegmentsUrl := strings.Join(splitMediaManUrl[:8], "/")
-
-	return newVideoInfo.Title, mediaPlaylist.Segments, mediaPlaylist.Count(), rawSegmentsUrl
+	splitMediaManURL := strings.Split(mediaManifestURL, "/")
+	rawSegmentsURL := strings.Join(splitMediaManURL[:8], "/")
+	return newVideoInfo.Title, mediaPlaylist.Segments, mediaPlaylist.Count(), rawSegmentsURL
 }
