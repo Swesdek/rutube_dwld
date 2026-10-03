@@ -19,8 +19,11 @@ rutube_dwld.exe --threads 100 RUTUBE_LINK
 ````
 
 Доступны флаги:
+
+```
 --threads для указания количества потоков на скачивание
 --private для скачивания приватного видео
+```
 
 # EN
 
@@ -41,5 +44,8 @@ rutube_dwld.exe --threads 100 RUTUBE_LINK
 ````
 
 Available flags:
+
+```
 --threads for specifying how many concurrent threads to use
 --private to download private videos
+```
