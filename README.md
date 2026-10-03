@@ -18,9 +18,12 @@ go run ./cmd/main.go --threads 100 RUTUBE_LINK
 rutube_dwld.exe --threads 100 RUTUBE_LINK
 ````
 
-В данный момент доступен только один флаг --threads для указания количества потоков на скачивание
+Доступны флаги:
+--threads для указания количества потоков на скачивание
+--private для скачивания приватного видео
 
 # EN
+
 ## Usage
 
 To use this you need to have ffmpeg installed
@@ -37,4 +40,6 @@ Or like this with compiled binary
 rutube_dwld.exe --threads 100 RUTUBE_LINK
 ````
 
-Currently only --threads flag is available
+Available flags:
+--threads for specifying how many concurrent threads to use
+--private to download private videos
